@@ -1,0 +1,145 @@
+{\rtf1\ansi\ansicpg1251\cocoartf2818
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 import logging\
+import requests\
+from bs4 import BeautifulSoup\
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes\
+from telegram.constants import ParseMode\
+import asyncio\
+from apscheduler.schedulers.asyncio import AsyncIOScheduler\
+import random\
+\
+# \uc0\u1053 \u1072 \u1089 \u1090 \u1088 \u1086 \u1081 \u1082 \u1072  \u1083 \u1086 \u1075 \u1080 \u1088 \u1086 \u1074 \u1072 \u1085 \u1080 \u1103 \
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)\
+logger = logging.getLogger(__name__)\
+\
+# \uc0\u1047 \u1072 \u1084 \u1077 \u1085 \u1080 \u1090 \u1077  \u1101 \u1090 \u1080  \u1079 \u1085 \u1072 \u1095 \u1077 \u1085 \u1080 \u1103  \u1089 \u1074 \u1086 \u1080 \u1084 \u1080 \
+BOT_TOKEN = "\uc0\u1042 \u1040 \u1064 _\u1058 \u1054 \u1050 \u1045 \u1053 _\u1041 \u1054 \u1058 \u1040 "\
+CHANNEL_ID = "@\uc0\u1074 \u1072 \u1096 _\u1082 \u1072 \u1085 \u1072 \u1083 "\
+\
+# \uc0\u1055 \u1077 \u1088 \u1077 \u1086 \u1087 \u1088 \u1077 \u1076 \u1077 \u1083 \u1103 \u1077 \u1084  \u1084 \u1077 \u1090 \u1086 \u1076  BeautifulSoup \u1076 \u1083 \u1103  \u1080 \u1089 \u1087 \u1086 \u1083 \u1100 \u1079 \u1086 \u1074 \u1072 \u1085 \u1080 \u1103  \u1082 \u1086 \u1085 \u1082 \u1088 \u1077 \u1090 \u1085 \u1086 \u1075 \u1086  \u1087 \u1072 \u1088 \u1089 \u1077 \u1088 \u1072 \
+original_soup = BeautifulSoup\
+def custom_soup(*args, **kwargs):\
+    if 'features' not in kwargs:\
+        kwargs['features'] = 'html.parser'\
+    return original_soup(*args, **kwargs)\
+\
+BeautifulSoup = custom_soup\
+\
+# \uc0\u1060 \u1091 \u1085 \u1082 \u1094 \u1080 \u1103  \u1076 \u1083 \u1103  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1103  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 \
+async def send_message(update, context):\
+    # \uc0\u1057 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1076 \u1083 \u1103  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080 \
+    message = "\uc0\u1055 \u1088 \u1080 \u1074 \u1077 \u1090 ! \u1069 \u1090 \u1086  \u1090 \u1077 \u1089 \u1090 \u1086 \u1074 \u1086 \u1077  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1086 \u1090  \u1084 \u1086 \u1077 \u1075 \u1086  \u1090 \u1077 \u1083 \u1077 \u1075 \u1088 \u1072 \u1084 -\u1073 \u1086 \u1090 \u1072 ."\
+    logger.info("\uc0\u1055 \u1086 \u1087 \u1099 \u1090 \u1082 \u1072  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1080 \u1090 \u1100  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 ...")\
+    # \uc0\u1054 \u1090 \u1087 \u1088 \u1072 \u1074 \u1083 \u1103 \u1077 \u1084  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 \
+    try:\
+        await context.bot.send_message(chat_id=CHANNEL_ID, text=message + "\\n\\nVK: [https://vk.com/kolesnikovilya](https://vk.com/kolesnikovilya)", parse_mode=ParseMode.MARKDOWN)\
+        logger.info(f"\uc0\u1057 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1083 \u1077 \u1085 \u1086  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \{message\}")\
+    except Exception as e:\
+        logger.error(f"\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1077  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1103  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \{e\}")\
+\
+# \uc0\u1060 \u1091 \u1085 \u1082 \u1094 \u1080 \u1103  \u1076 \u1083 \u1103  \u1086 \u1073 \u1088 \u1072 \u1073 \u1086 \u1090 \u1082 \u1080  \u1090 \u1077 \u1082 \u1089 \u1090 \u1086 \u1074 \u1099 \u1093  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1081  \u1086 \u1090  \u1087 \u1086 \u1083 \u1100 \u1079 \u1086 \u1074 \u1072 \u1090 \u1077 \u1083 \u1103  \u1080  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080  \u1080 \u1093  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 \
+async def forward_to_channel(update, context):\
+    user_message = update.message.text\
+    logger.info(f"\uc0\u1055 \u1086 \u1083 \u1091 \u1095 \u1077 \u1085 \u1086  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1086 \u1090  \u1087 \u1086 \u1083 \u1100 \u1079 \u1086 \u1074 \u1072 \u1090 \u1077 \u1083 \u1103  '\{update.effective_user.username\}': \{user_message\}")\
+\
+    logger.info("\uc0\u1055 \u1086 \u1087 \u1099 \u1090 \u1082 \u1072  \u1087 \u1077 \u1088 \u1077 \u1089 \u1083 \u1072 \u1090 \u1100  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 ...")\
+    try:\
+        await context.bot.send_message(chat_id=CHANNEL_ID, text=user_message + "\\n\\nVK: [https://vk.com/kolesnikovilya](https://vk.com/kolesnikovilya)", parse_mode=ParseMode.MARKDOWN)\
+        logger.info(f"\uc0\u1057 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1086 \u1090  \u1087 \u1086 \u1083 \u1100 \u1079 \u1086 \u1074 \u1072 \u1090 \u1077 \u1083 \u1103  '\{update.effective_user.username\}' \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1083 \u1077 \u1085 \u1086  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \{user_message\}")\
+    except Exception as e:\
+        logger.error(f"\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1077  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1103  \u1086 \u1090  \u1087 \u1086 \u1083 \u1100 \u1079 \u1086 \u1074 \u1072 \u1090 \u1077 \u1083 \u1103  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \{e\}")\
+\
+# \uc0\u1060 \u1091 \u1085 \u1082 \u1094 \u1080 \u1103  \u1076 \u1083 \u1103  \u1072 \u1074 \u1090 \u1086 \u1084 \u1072 \u1090 \u1080 \u1095 \u1077 \u1089 \u1082 \u1086 \u1081  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080  \u1089 \u1090 \u1072 \u1090 \u1100 \u1080  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 \
+async def send_harekrishna_article():\
+    url = "https://harekrishna.ru/rss/read/"\
+    headers = \{"User-Agent": "bot_DAS/1.0"\}\
+    try:\
+        response = requests.get(url, headers=headers)\
+        if response.status_code == 200:\
+            soup = BeautifulSoup(response.content, "html.parser")\
+            items = soup.find_all("item")\
+            if items:\
+                item = random.choice(items)\
+                title = item.find("title").text\
+                link = item.find("link").text\
+                description = item.find("description").text\
+                message = f"\{title\}\\n\\n\{description\}\\n\\n[\uc0\u1055 \u1086 \u1076 \u1088 \u1086 \u1073 \u1085 \u1077 \u1077 ](\{link\})\\n\\nVK: [https://vk.com/kolesnikovilya](https://vk.com/kolesnikovilya)"\
+                await application.bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode=ParseMode.MARKDOWN)\
+                logger.info(f"\uc0\u1057 \u1090 \u1072 \u1090 \u1100 \u1103  \u1089  \u1089 \u1072 \u1081 \u1090 \u1072  harekrishna.ru \u1091 \u1089 \u1087 \u1077 \u1096 \u1085 \u1086  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1083 \u1077 \u1085 \u1072  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \{title\}")\
+        else:\
+            logger.error(f"\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1087 \u1086 \u1076 \u1082 \u1083 \u1102 \u1095 \u1077 \u1085 \u1080 \u1080  \u1082  \u1089 \u1072 \u1081 \u1090 \u1091  harekrishna.ru, \u1082 \u1086 \u1076  \u1086 \u1090 \u1074 \u1077 \u1090 \u1072 : \{response.status_code\}")\
+    except Exception as e:\
+        logger.error(f"\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1086 \u1073 \u1088 \u1072 \u1097 \u1077 \u1085 \u1080 \u1080  \u1082  \u1089 \u1072 \u1081 \u1090 \u1091  harekrishna.ru: \{e\}")\
+\
+# \uc0\u1060 \u1091 \u1085 \u1082 \u1094 \u1080 \u1103  \u1076 \u1083 \u1103  \u1086 \u1073 \u1088 \u1072 \u1073 \u1086 \u1090 \u1082 \u1080  \u1082 \u1086 \u1084 \u1072 \u1085 \u1076 \u1099  /hk \u1080  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080  \u1089 \u1090 \u1072 \u1090 \u1100 \u1080  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 \
+async def send_harekrishna_article_command(update, context):\
+    query = ' '.join(context.args)\
+    logger.info(f"\uc0\u1055 \u1086 \u1080 \u1089 \u1082  \u1089 \u1090 \u1072 \u1090 \u1100 \u1080  \u1085 \u1072  \u1090 \u1077 \u1084 \u1091 : \{query\}")\
+    url = "https://harekrishna.ru/rss/read/"\
+    headers = \{"User-Agent": "bot_DAS/1.0"\}\
+    try:\
+        response = requests.get(url, headers=headers)\
+        if response.status_code == 200:\
+            soup = BeautifulSoup(response.content, "html.parser")\
+            items = soup.find_all("item")\
+            filtered_items = [item for item in items if query.lower() in item.find("title").text.lower()]\
+            if filtered_items:\
+                item = random.choice(filtered_items)\
+                title = item.find("title").text\
+                link = item.find("link").text\
+                description = item.find("description").text\
+                message = f"\{title\}\\n\\n\{description\}\\n\\n[\uc0\u1055 \u1086 \u1076 \u1088 \u1086 \u1073 \u1085 \u1077 \u1077 ](\{link\})\\n\\nVK: [https://vk.com/kolesnikovilya](https://vk.com/kolesnikovilya)"\
+                await context.bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode=ParseMode.MARKDOWN)\
+                logger.info(f"\uc0\u1057 \u1090 \u1072 \u1090 \u1100 \u1103  \u1087 \u1086  \u1079 \u1072 \u1087 \u1088 \u1086 \u1089 \u1091  '\{query\}' \u1091 \u1089 \u1087 \u1077 \u1096 \u1085 \u1086  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1083 \u1077 \u1085 \u1072  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \{title\}")\
+            else:\
+                await update.message.reply_text("\uc0\u1053 \u1077  \u1091 \u1076 \u1072 \u1083 \u1086 \u1089 \u1100  \u1085 \u1072 \u1081 \u1090 \u1080  \u1089 \u1090 \u1072 \u1090 \u1100 \u1102  \u1087 \u1086  \u1074 \u1072 \u1096 \u1077 \u1084 \u1091  \u1079 \u1072 \u1087 \u1088 \u1086 \u1089 \u1091 .")\
+                logger.info(f"\uc0\u1057 \u1090 \u1072 \u1090 \u1100 \u1103  \u1087 \u1086  \u1079 \u1072 \u1087 \u1088 \u1086 \u1089 \u1091  '\{query\}' \u1085 \u1077  \u1085 \u1072 \u1081 \u1076 \u1077 \u1085 \u1072 .")\
+        else:\
+            logger.error(f"\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1087 \u1086 \u1076 \u1082 \u1083 \u1102 \u1095 \u1077 \u1085 \u1080 \u1080  \u1082  \u1089 \u1072 \u1081 \u1090 \u1091  harekrishna.ru, \u1082 \u1086 \u1076  \u1086 \u1090 \u1074 \u1077 \u1090 \u1072 : \{response.status_code\}")\
+    except Exception as e:\
+        logger.error(f"\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1086 \u1073 \u1088 \u1072 \u1097 \u1077 \u1085 \u1080 \u1080  \u1082  \u1089 \u1072 \u1081 \u1090 \u1091  harekrishna.ru: \{e\}")\
+\
+# \uc0\u1054 \u1089 \u1085 \u1086 \u1074 \u1085 \u1072 \u1103  \u1092 \u1091 \u1085 \u1082 \u1094 \u1080 \u1103 \
+def main():\
+    # \uc0\u1057 \u1086 \u1079 \u1076 \u1072 \u1077 \u1084  \u1086 \u1073 \u1098 \u1077 \u1082 \u1090  ApplicationBuilder \u1080  \u1087 \u1077 \u1088 \u1077 \u1076 \u1072 \u1077 \u1084  \u1077 \u1084 \u1091  \u1090 \u1086 \u1082 \u1077 \u1085  \u1074 \u1072 \u1096 \u1077 \u1075 \u1086  \u1073 \u1086 \u1090 \u1072 \
+    global application\
+    application = ApplicationBuilder().token(BOT_TOKEN).build()\
+\
+    # \uc0\u1044 \u1086 \u1073 \u1072 \u1074 \u1083 \u1103 \u1077 \u1084  \u1086 \u1073 \u1088 \u1072 \u1073 \u1086 \u1090 \u1095 \u1080 \u1082  \u1082 \u1086 \u1084 \u1072 \u1085 \u1076 \u1099  /send\
+    application.add_handler(CommandHandler("send", send_message))\
+\
+    # \uc0\u1044 \u1086 \u1073 \u1072 \u1074 \u1083 \u1103 \u1077 \u1084  \u1086 \u1073 \u1088 \u1072 \u1073 \u1086 \u1090 \u1095 \u1080 \u1082  \u1090 \u1077 \u1082 \u1089 \u1090 \u1086 \u1074 \u1099 \u1093  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1081  \u1086 \u1090  \u1087 \u1086 \u1083 \u1100 \u1079 \u1086 \u1074 \u1072 \u1090 \u1077 \u1083 \u1103 \
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, forward_to_channel))\
+\
+    # \uc0\u1044 \u1086 \u1073 \u1072 \u1074 \u1083 \u1103 \u1077 \u1084  \u1086 \u1073 \u1088 \u1072 \u1073 \u1086 \u1090 \u1095 \u1080 \u1082  \u1082 \u1086 \u1084 \u1072 \u1085 \u1076 \u1099  /hk \u1076 \u1083 \u1103  \u1087 \u1086 \u1080 \u1089 \u1082 \u1072  \u1080  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080  \u1089 \u1090 \u1072 \u1090 \u1100 \u1080  \u1087 \u1086  \u1079 \u1072 \u1087 \u1088 \u1086 \u1089 \u1091 \
+    application.add_handler(CommandHandler("hk", send_harekrishna_article_command))\
+\
+    # \uc0\u1057 \u1086 \u1079 \u1076 \u1072 \u1077 \u1084  \u1087 \u1083 \u1072 \u1085 \u1080 \u1088 \u1086 \u1074 \u1097 \u1080 \u1082  \u1079 \u1072 \u1076 \u1072 \u1095  \u1076 \u1083 \u1103  \u1072 \u1074 \u1090 \u1086 \u1084 \u1072 \u1090 \u1080 \u1095 \u1077 \u1089 \u1082 \u1086 \u1081  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080  \u1089 \u1090 \u1072 \u1090 \u1077 \u1081 \
+    scheduler = AsyncIOScheduler()\
+    scheduler.add_job(send_harekrishna_article, 'interval', minutes=5)\
+    scheduler.start()\
+\
+    # \uc0\u1058 \u1077 \u1089 \u1090 \u1086 \u1074 \u1086 \u1077  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1087 \u1086 \u1089 \u1083 \u1077  \u1079 \u1072 \u1087 \u1091 \u1089 \u1082 \u1072 \
+    async def send_test_message():\
+        logger.info("\uc0\u1054 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1072  \u1090 \u1077 \u1089 \u1090 \u1086 \u1074 \u1086 \u1075 \u1086  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1103  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083  \u1076 \u1083 \u1103  \u1087 \u1088 \u1086 \u1074 \u1077 \u1088 \u1082 \u1080  \u1088 \u1072 \u1073 \u1086 \u1090 \u1099 ...")\
+        try:\
+            await application.bot.send_message(chat_id=CHANNEL_ID, text="\uc0\u1058 \u1077 \u1089 \u1090 \u1086 \u1074 \u1086 \u1077  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1076 \u1083 \u1103  \u1087 \u1088 \u1086 \u1074 \u1077 \u1088 \u1082 \u1080  \u1088 \u1072 \u1073 \u1086 \u1090 \u1099  \u1073 \u1086 \u1090 \u1072 .")\
+            logger.info("\uc0\u1058 \u1077 \u1089 \u1090 \u1086 \u1074 \u1086 \u1077  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1091 \u1089 \u1087 \u1077 \u1096 \u1085 \u1086  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1083 \u1077 \u1085 \u1086  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 .")\
+        except Exception as e:\
+            logger.error(f"\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1077  \u1090 \u1077 \u1089 \u1090 \u1086 \u1074 \u1086 \u1075 \u1086  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1103  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \{e\}")\
+\
+    # \uc0\u1047 \u1072 \u1087 \u1091 \u1089 \u1082 \u1072 \u1077 \u1084  \u1073 \u1086 \u1090 \u1072 \
+    logger.info("\uc0\u1041 \u1086 \u1090  \u1079 \u1072 \u1087 \u1091 \u1097 \u1077 \u1085  \u1080  \u1075 \u1086 \u1090 \u1086 \u1074  \u1082  \u1088 \u1072 \u1073 \u1086 \u1090 \u1077 .")\
+    loop = asyncio.get_event_loop()\
+    loop.run_until_complete(send_test_message())\
+    application.run_polling()\
+\
+if __name__ == "__main__":\
+    main()\
+}

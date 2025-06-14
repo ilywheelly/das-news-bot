@@ -1,0 +1,187 @@
+{\rtf1\ansi\ansicpg1251\cocoartf2820
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;}
+{\colortbl;\red255\green255\blue255;\red183\green111\blue179;\red24\green24\blue24;\red193\green193\blue193;
+\red67\green192\blue160;\red89\green138\blue67;\red212\green214\blue154;\red140\green211\blue254;\red202\green202\blue202;
+\red194\green126\blue101;\red70\green137\blue204;\red66\green179\blue255;\red205\green173\blue106;\red167\green197\blue152;
+}
+{\*\expandedcolortbl;;\cssrgb\c77255\c52549\c75294;\cssrgb\c12157\c12157\c12157;\cssrgb\c80000\c80000\c80000;
+\cssrgb\c30588\c78824\c69020;\cssrgb\c41569\c60000\c33333;\cssrgb\c86275\c86275\c66667;\cssrgb\c61176\c86275\c99608;\cssrgb\c83137\c83137\c83137;
+\cssrgb\c80784\c56863\c47059;\cssrgb\c33725\c61176\c83922;\cssrgb\c30980\c75686\c100000;\cssrgb\c84314\c72941\c49020;\cssrgb\c70980\c80784\c65882;
+}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs24 \cf2 \cb3 \expnd0\expndtw0\kerning0
+import\cf4  \cf5 logging\cf4 \cb1 \
+\cf2 \cb3 import\cf4  \cf5 requests\cf4 \cb1 \
+\cf2 \cb3 from\cf4  \cf5 bs4\cf4  \cf2 import\cf4  \cf5 BeautifulSoup\cf4 \cb1 \
+\cf2 \cb3 from\cf4  \cf5 telegram\cf4 .\cf5 ext\cf4  \cf2 import\cf4  \cf5 ApplicationBuilder\cf4 , \cf5 CommandHandler\cf4 , \cf5 MessageHandler\cf4 , \cf5 filters\cf4 , \cf5 ContextTypes\cf4 \cb1 \
+\cf2 \cb3 from\cf4  \cf5 telegram\cf4 .\cf5 constants\cf4  \cf2 import\cf4  \cf5 ParseMode\cf4 \cb1 \
+\cf2 \cb3 import\cf4  \cf5 asyncio\cf4 \cb1 \
+\cf2 \cb3 from\cf4  \cf5 apscheduler\cf4 .\cf5 schedulers\cf4 .\cf5 asyncio\cf4  \cf2 import\cf4  \cf5 AsyncIOScheduler\cf4 \cb1 \
+\cf2 \cb3 import\cf4  \cf5 random\cf4 \cb1 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf6 \cb3 # \uc0\u1053 \u1072 \u1089 \u1090 \u1088 \u1086 \u1081 \u1082 \u1072  \u1083 \u1086 \u1075 \u1080 \u1088 \u1086 \u1074 \u1072 \u1085 \u1080 \u1103 \cf4 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \cb3 logging\cf4 .\cf7 basicConfig\cf4 (\cf8 format\cf9 =\cf10 '\cf11 %(asctime)s\cf10  - \cf11 %(name)s\cf10  - \cf11 %(levelname)s\cf10  - \cf11 %(message)s\cf10 '\cf4 , \cf8 level\cf9 =\cf5 logging\cf4 .\cf8 INFO\cf4 )\cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf8 \cb3 logger\cf4  \cf9 =\cf4  \cf5 logging\cf4 .\cf7 getLogger\cf4 (\cf8 __name__\cf4 )\cb1 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf6 \cb3 # \uc0\u1047 \u1072 \u1084 \u1077 \u1085 \u1080 \u1090 \u1077  \u1101 \u1090 \u1080  \u1079 \u1085 \u1072 \u1095 \u1077 \u1085 \u1080 \u1103  \u1089 \u1074 \u1086 \u1080 \u1084 \u1080 \cf4 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf12 \cb3 BOT_TOKEN\cf4  \cf9 =\cf4  \cf10 "8019538415:AAHSknxd3-GZ_YNDtnG2sNG-YPqtDsqxJz0"\cf4 \cb1 \
+\cf12 \cb3 CHANNEL_ID\cf4  \cf9 =\cf4  \cf10 "@test_DenisovArtS_bot"\cf4 \cb1 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf6 \cb3 # \uc0\u1060 \u1091 \u1085 \u1082 \u1094 \u1080 \u1103  \u1076 \u1083 \u1103  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1103  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 \cf4 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf11 \cb3 async\cf4  \cf11 def\cf4  \cf7 send_message\cf4 (\cf8 update\cf4 , \cf8 context\cf4 ):\cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf6 # \uc0\u1057 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1076 \u1083 \u1103  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080 \cf4 \cb1 \
+\cb3     \cf8 message\cf4  \cf9 =\cf4  \cf10 "\uc0\u1055 \u1088 \u1080 \u1074 \u1077 \u1090 ! \u1069 \u1090 \u1086  \u1090 \u1077 \u1089 \u1090 \u1086 \u1074 \u1086 \u1077  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1086 \u1090  \u1084 \u1086 \u1077 \u1075 \u1086  \u1090 \u1077 \u1083 \u1077 \u1075 \u1088 \u1072 \u1084 -\u1073 \u1086 \u1090 \u1072 ."\cf4 \cb1 \
+\cb3     \cf8 logger\cf4 .\cf7 info\cf4 (\cf10 "\uc0\u1055 \u1086 \u1087 \u1099 \u1090 \u1082 \u1072  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1080 \u1090 \u1100  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 ..."\cf4 )\cb1 \
+\cb3     \cf6 # \uc0\u1054 \u1090 \u1087 \u1088 \u1072 \u1074 \u1083 \u1103 \u1077 \u1084  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 \cf4 \cb1 \
+\cb3     \cf2 try\cf4 :\cb1 \
+\cb3         \cf2 await\cf4  \cf8 context\cf4 .bot.send_message(\cf8 chat_id\cf9 =\cf12 CHANNEL_ID\cf4 , \cf8 text\cf9 =\cf8 message\cf4  \cf9 +\cf4  \cf10 "\cf13 \\n\\n\cf10 VK: [https://vk.com/kolesnikovilya](https://vk.com/kolesnikovilya)"\cf4 , \cf8 parse_mode\cf9 =\cf5 ParseMode\cf4 .\cf12 MARKDOWN\cf4 )\cb1 \
+\cb3         \cf8 logger\cf4 .\cf7 info\cf4 (\cf11 f\cf10 "\uc0\u1057 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1083 \u1077 \u1085 \u1086  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \cf11 \{\cf8 message\cf11 \}\cf10 "\cf4 )\cb1 \
+\cb3     \cf2 except\cf4  \cf5 Exception\cf4  \cf2 as\cf4  \cf8 e\cf4 :\cb1 \
+\cb3         \cf8 logger\cf4 .\cf7 error\cf4 (\cf11 f\cf10 "\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1077  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1103  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \cf11 \{\cf8 e\cf11 \}\cf10 "\cf4 )\cb1 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf6 \cb3 # \uc0\u1060 \u1091 \u1085 \u1082 \u1094 \u1080 \u1103  \u1076 \u1083 \u1103  \u1086 \u1073 \u1088 \u1072 \u1073 \u1086 \u1090 \u1082 \u1080  \u1090 \u1077 \u1082 \u1089 \u1090 \u1086 \u1074 \u1099 \u1093  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1081  \u1086 \u1090  \u1087 \u1086 \u1083 \u1100 \u1079 \u1086 \u1074 \u1072 \u1090 \u1077 \u1083 \u1103  \u1080  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080  \u1080 \u1093  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 \cf4 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf11 \cb3 async\cf4  \cf11 def\cf4  \cf7 forward_to_channel\cf4 (\cf8 update\cf4 , \cf8 context\cf4 ):\cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf8 user_message\cf4  \cf9 =\cf4  \cf8 update\cf4 .message.text\cb1 \
+\cb3     \cf8 logger\cf4 .\cf7 info\cf4 (\cf11 f\cf10 "\uc0\u1055 \u1086 \u1083 \u1091 \u1095 \u1077 \u1085 \u1086  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1086 \u1090  \u1087 \u1086 \u1083 \u1100 \u1079 \u1086 \u1074 \u1072 \u1090 \u1077 \u1083 \u1103  '\cf11 \{\cf8 update\cf4 .effective_user.username\cf11 \}\cf10 ': \cf11 \{\cf8 user_message\cf11 \}\cf10 "\cf4 )\cb1 \
+\
+\cb3     \cf8 logger\cf4 .\cf7 info\cf4 (\cf10 "\uc0\u1055 \u1086 \u1087 \u1099 \u1090 \u1082 \u1072  \u1087 \u1077 \u1088 \u1077 \u1089 \u1083 \u1072 \u1090 \u1100  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 ..."\cf4 )\cb1 \
+\cb3     \cf2 try\cf4 :\cb1 \
+\cb3         \cf2 await\cf4  \cf8 context\cf4 .bot.send_message(\cf8 chat_id\cf9 =\cf12 CHANNEL_ID\cf4 , \cf8 text\cf9 =\cf8 user_message\cf4  \cf9 +\cf4  \cf10 "\cf13 \\n\\n\cf10 VK: [https://vk.com/kolesnikovilya](https://vk.com/kolesnikovilya)"\cf4 , \cf8 parse_mode\cf9 =\cf5 ParseMode\cf4 .\cf12 MARKDOWN\cf4 )\cb1 \
+\cb3         \cf8 logger\cf4 .\cf7 info\cf4 (\cf11 f\cf10 "\uc0\u1057 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1086 \u1090  \u1087 \u1086 \u1083 \u1100 \u1079 \u1086 \u1074 \u1072 \u1090 \u1077 \u1083 \u1103  '\cf11 \{\cf8 update\cf4 .effective_user.username\cf11 \}\cf10 ' \uc0\u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1083 \u1077 \u1085 \u1086  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \cf11 \{\cf8 user_message\cf11 \}\cf10 "\cf4 )\cb1 \
+\cb3     \cf2 except\cf4  \cf5 Exception\cf4  \cf2 as\cf4  \cf8 e\cf4 :\cb1 \
+\cb3         \cf8 logger\cf4 .\cf7 error\cf4 (\cf11 f\cf10 "\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1077  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1103  \u1086 \u1090  \u1087 \u1086 \u1083 \u1100 \u1079 \u1086 \u1074 \u1072 \u1090 \u1077 \u1083 \u1103  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \cf11 \{\cf8 e\cf11 \}\cf10 "\cf4 )\cb1 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf6 \cb3 # \uc0\u1060 \u1091 \u1085 \u1082 \u1094 \u1080 \u1103  \u1076 \u1083 \u1103  \u1087 \u1086 \u1083 \u1091 \u1095 \u1077 \u1085 \u1080 \u1103  \u1087 \u1086 \u1083 \u1085 \u1086 \u1075 \u1086  \u1089 \u1086 \u1076 \u1077 \u1088 \u1078 \u1080 \u1084 \u1086 \u1075 \u1086  \u1089 \u1090 \u1072 \u1090 \u1100 \u1080 \cf4 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf11 \cb3 def\cf4  \cf7 get_full_article\cf4 (\cf8 link\cf4 ):\cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf8 headers\cf4  \cf9 =\cf4  \{\cf10 "User-Agent"\cf4 : \cf10 "bot_DAS/1.0"\cf4 \}\cb1 \
+\cb3     \cf2 try\cf4 :\cb1 \
+\cb3         \cf8 response\cf4  \cf9 =\cf4  \cf5 requests\cf4 .\cf7 get\cf4 (\cf8 link\cf4 , \cf8 headers\cf9 =\cf8 headers\cf4 )\cb1 \
+\cb3         \cf2 if\cf4  \cf8 response\cf4 .\cf8 status_code\cf4  \cf9 ==\cf4  \cf14 200\cf4 :\cb1 \
+\cb3             \cf8 soup\cf4  \cf9 =\cf4  \cf5 BeautifulSoup\cf4 (\cf8 response\cf4 .\cf8 content\cf4 , \cf10 "html.parser"\cf4 )\cb1 \
+\cb3             \cf8 paragraphs\cf4  \cf9 =\cf4  \cf8 soup\cf4 .\cf7 find_all\cf4 (\cf10 "p"\cf4 )\cb1 \
+\cb3             \cf2 if\cf4  \cf8 paragraphs\cf4 :\cb1 \
+\cb3                 \cf2 return\cf4  \cf10 "\cf13 \\n\cf10 "\cf4 .\cf7 join\cf4 ([\cf8 para\cf4 .text \cf2 for\cf4  \cf8 para\cf4  \cf2 in\cf4  \cf8 paragraphs\cf4 [:\cf14 3\cf4 ]])  \cf6 # \uc0\u1041 \u1077 \u1088 \u1077 \u1084  \u1087 \u1077 \u1088 \u1074 \u1099 \u1077  \u1090 \u1088 \u1080  \u1072 \u1073 \u1079 \u1072 \u1094 \u1072 \cf4 \cb1 \
+\cb3             \cf2 else\cf4 :\cb1 \
+\cb3                 \cf2 return\cf4  \cf10 "\uc0\u1054 \u1087 \u1080 \u1089 \u1072 \u1085 \u1080 \u1077  \u1085 \u1077  \u1085 \u1072 \u1081 \u1076 \u1077 \u1085 \u1086 ."\cf4 \cb1 \
+\cb3         \cf2 else\cf4 :\cb1 \
+\cb3             \cf8 logger\cf4 .\cf7 error\cf4 (\cf11 f\cf10 "\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1087 \u1086 \u1076 \u1082 \u1083 \u1102 \u1095 \u1077 \u1085 \u1080 \u1080  \u1082  \u1089 \u1090 \u1088 \u1072 \u1085 \u1080 \u1094 \u1077  \u1089 \u1090 \u1072 \u1090 \u1100 \u1080 , \u1082 \u1086 \u1076  \u1086 \u1090 \u1074 \u1077 \u1090 \u1072 : \cf11 \{\cf8 response\cf4 .\cf8 status_code\cf11 \}\cf10 "\cf4 )\cb1 \
+\cb3             \cf2 return\cf4  \cf10 "\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1087 \u1086 \u1083 \u1091 \u1095 \u1077 \u1085 \u1080 \u1080  \u1089 \u1090 \u1072 \u1090 \u1100 \u1080 ."\cf4 \cb1 \
+\cb3     \cf2 except\cf4  \cf5 Exception\cf4  \cf2 as\cf4  \cf8 e\cf4 :\cb1 \
+\cb3         \cf8 logger\cf4 .\cf7 error\cf4 (\cf11 f\cf10 "\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1086 \u1073 \u1088 \u1072 \u1097 \u1077 \u1085 \u1080 \u1080  \u1082  \u1089 \u1090 \u1088 \u1072 \u1085 \u1080 \u1094 \u1077  \u1089 \u1090 \u1072 \u1090 \u1100 \u1080 : \cf11 \{\cf8 e\cf11 \}\cf10 "\cf4 )\cb1 \
+\cb3         \cf2 return\cf4  \cf10 "\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1087 \u1086 \u1083 \u1091 \u1095 \u1077 \u1085 \u1080 \u1080  \u1089 \u1090 \u1072 \u1090 \u1100 \u1080 ."\cf4 \cb1 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf6 \cb3 # \uc0\u1060 \u1091 \u1085 \u1082 \u1094 \u1080 \u1103  \u1076 \u1083 \u1103  \u1072 \u1074 \u1090 \u1086 \u1084 \u1072 \u1090 \u1080 \u1095 \u1077 \u1089 \u1082 \u1086 \u1081  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080  \u1089 \u1090 \u1072 \u1090 \u1100 \u1080  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 \cf4 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf11 \cb3 async\cf4  \cf11 def\cf4  \cf7 send_harekrishna_article\cf4 ():\cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf8 url\cf4  \cf9 =\cf4  \cf10 "https://harekrishna.ru/rss/read/"\cf4 \cb1 \
+\cb3     \cf8 headers\cf4  \cf9 =\cf4  \{\cf10 "User-Agent"\cf4 : \cf10 "bot_DAS/1.0"\cf4 \}\cb1 \
+\cb3     \cf2 try\cf4 :\cb1 \
+\cb3         \cf8 response\cf4  \cf9 =\cf4  \cf5 requests\cf4 .\cf7 get\cf4 (\cf8 url\cf4 , \cf8 headers\cf9 =\cf8 headers\cf4 )\cb1 \
+\cb3         \cf2 if\cf4  \cf8 response\cf4 .\cf8 status_code\cf4  \cf9 ==\cf4  \cf14 200\cf4 :\cb1 \
+\cb3             \cf8 soup\cf4  \cf9 =\cf4  \cf5 BeautifulSoup\cf4 (\cf8 response\cf4 .\cf8 content\cf4 , \cf10 "lxml-xml"\cf4 )\cb1 \
+\cb3             \cf8 items\cf4  \cf9 =\cf4  \cf8 soup\cf4 .\cf7 find_all\cf4 (\cf10 "item"\cf4 )\cb1 \
+\cb3             \cf2 if\cf4  \cf8 items\cf4 :\cb1 \
+\cb3                 \cf8 item\cf4  \cf9 =\cf4  \cf5 random\cf4 .\cf8 choice\cf4 (\cf8 items\cf4 )\cb1 \
+\cb3                 \cf8 title\cf4  \cf9 =\cf4  \cf8 item\cf4 .find(\cf10 "title"\cf4 ).text\cb1 \
+\cb3                 \cf8 link\cf4  \cf9 =\cf4  \cf8 item\cf4 .find(\cf10 "link"\cf4 ).text\cb1 \
+\cb3                 \cf8 description\cf4  \cf9 =\cf4  \cf7 get_full_article\cf4 (\cf8 link\cf4 )\cb1 \
+\cb3                 \cf8 message\cf4  \cf9 =\cf4  \cf11 f\cf10 "\cf11 \{\cf8 title\cf11 \}\cf13 \\n\\n\cf11 \{\cf8 description\cf11 \}\cf13 \\n\\n\cf10 [\uc0\u1055 \u1086 \u1076 \u1088 \u1086 \u1073 \u1085 \u1077 \u1077 ](\cf11 \{\cf8 link\cf11 \}\cf10 )\cf13 \\n\\n\cf10 VK: [https://vk.com/kolesnikovilya](https://vk.com/kolesnikovilya)\cf13 \\n\\n\cf10 \uc0\u1048 \u1089 \u1090 \u1086 \u1095 \u1085 \u1080 \u1082 : [\u1063 \u1080 \u1090 \u1072 \u1090 \u1100  \u1085 \u1072  \u1089 \u1072 \u1081 \u1090 \u1077 ](\cf11 \{\cf8 link\cf11 \}\cf10 )"\cf4 \cb1 \
+\cb3                 \cf2 await\cf4  \cf8 application\cf4 .\cf8 bot\cf4 .\cf7 send_message\cf4 (\cf8 chat_id\cf9 =\cf12 CHANNEL_ID\cf4 , \cf8 text\cf9 =\cf8 message\cf4 , \cf8 parse_mode\cf9 =\cf5 ParseMode\cf4 .\cf12 MARKDOWN\cf4 )\cb1 \
+\cb3                 \cf8 logger\cf4 .\cf7 info\cf4 (\cf11 f\cf10 "\uc0\u1057 \u1090 \u1072 \u1090 \u1100 \u1103  \u1089  \u1089 \u1072 \u1081 \u1090 \u1072  harekrishna.ru \u1091 \u1089 \u1087 \u1077 \u1096 \u1085 \u1086  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1083 \u1077 \u1085 \u1072  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \cf11 \{\cf8 title\cf11 \}\cf10 "\cf4 )\cb1 \
+\cb3         \cf2 else\cf4 :\cb1 \
+\cb3             \cf8 logger\cf4 .\cf7 error\cf4 (\cf11 f\cf10 "\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1087 \u1086 \u1076 \u1082 \u1083 \u1102 \u1095 \u1077 \u1085 \u1080 \u1080  \u1082  \u1089 \u1072 \u1081 \u1090 \u1091  harekrishna.ru, \u1082 \u1086 \u1076  \u1086 \u1090 \u1074 \u1077 \u1090 \u1072 : \cf11 \{\cf8 response\cf4 .\cf8 status_code\cf11 \}\cf10 "\cf4 )\cb1 \
+\cb3     \cf2 except\cf4  \cf5 Exception\cf4  \cf2 as\cf4  \cf8 e\cf4 :\cb1 \
+\cb3         \cf8 logger\cf4 .\cf7 error\cf4 (\cf11 f\cf10 "\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1086 \u1073 \u1088 \u1072 \u1097 \u1077 \u1085 \u1080 \u1080  \u1082  \u1089 \u1072 \u1081 \u1090 \u1091  harekrishna.ru: \cf11 \{\cf8 e\cf11 \}\cf10 "\cf4 )\cb1 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf6 \cb3 # \uc0\u1060 \u1091 \u1085 \u1082 \u1094 \u1080 \u1103  \u1076 \u1083 \u1103  \u1086 \u1073 \u1088 \u1072 \u1073 \u1086 \u1090 \u1082 \u1080  \u1082 \u1086 \u1084 \u1072 \u1085 \u1076 \u1099  /hk \u1080  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080  \u1089 \u1090 \u1072 \u1090 \u1100 \u1080  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 \cf4 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf11 \cb3 async\cf4  \cf11 def\cf4  \cf7 send_harekrishna_article_command\cf4 (\cf8 update\cf4 , \cf8 context\cf4 ):\cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf8 query\cf4  \cf9 =\cf4  \cf10 ' '\cf4 .\cf7 join\cf4 (\cf8 context\cf4 .args)\cb1 \
+\cb3     \cf8 logger\cf4 .\cf7 info\cf4 (\cf11 f\cf10 "\uc0\u1055 \u1086 \u1080 \u1089 \u1082  \u1089 \u1090 \u1072 \u1090 \u1100 \u1080  \u1085 \u1072  \u1090 \u1077 \u1084 \u1091 : \cf11 \{\cf8 query\cf11 \}\cf10 "\cf4 )\cb1 \
+\cb3     \cf8 url\cf4  \cf9 =\cf4  \cf10 "https://harekrishna.ru/rss/read/"\cf4 \cb1 \
+\cb3     \cf8 headers\cf4  \cf9 =\cf4  \{\cf10 "User-Agent"\cf4 : \cf10 "bot_DAS/1.0"\cf4 \}\cb1 \
+\cb3     \cf2 try\cf4 :\cb1 \
+\cb3         \cf8 response\cf4  \cf9 =\cf4  \cf5 requests\cf4 .\cf7 get\cf4 (\cf8 url\cf4 , \cf8 headers\cf9 =\cf8 headers\cf4 )\cb1 \
+\cb3         \cf2 if\cf4  \cf8 response\cf4 .\cf8 status_code\cf4  \cf9 ==\cf4  \cf14 200\cf4 :\cb1 \
+\cb3             \cf8 soup\cf4  \cf9 =\cf4  \cf5 BeautifulSoup\cf4 (\cf8 response\cf4 .\cf8 content\cf4 , \cf10 "lxml-xml"\cf4 )\cb1 \
+\cb3             \cf8 items\cf4  \cf9 =\cf4  \cf8 soup\cf4 .\cf7 find_all\cf4 (\cf10 "item"\cf4 )\cb1 \
+\cb3             \cf8 filtered_items\cf4  \cf9 =\cf4  [\cf8 item\cf4  \cf2 for\cf4  \cf8 item\cf4  \cf2 in\cf4  \cf8 items\cf4  \cf2 if\cf4  \cf8 query\cf4 .\cf7 lower\cf4 () \cf11 in\cf4  \cf8 item\cf4 .find(\cf10 "title"\cf4 ).text.lower()]\cb1 \
+\cb3             \cf2 if\cf4  \cf8 filtered_items\cf4 :\cb1 \
+\cb3                 \cf8 item\cf4  \cf9 =\cf4  \cf5 random\cf4 .\cf8 choice\cf4 (\cf8 filtered_items\cf4 )\cb1 \
+\cb3                 \cf8 title\cf4  \cf9 =\cf4  \cf8 item\cf4 .find(\cf10 "title"\cf4 ).text\cb1 \
+\cb3                 \cf8 link\cf4  \cf9 =\cf4  \cf8 item\cf4 .find(\cf10 "link"\cf4 ).text\cb1 \
+\cb3                 \cf8 description\cf4  \cf9 =\cf4  \cf7 get_full_article\cf4 (\cf8 link\cf4 )\cb1 \
+\cb3                 \cf8 message\cf4  \cf9 =\cf4  \cf11 f\cf10 "\cf11 \{\cf8 title\cf11 \}\cf13 \\n\\n\cf11 \{\cf8 description\cf11 \}\cf13 \\n\\n\cf10 [\uc0\u1055 \u1086 \u1076 \u1088 \u1086 \u1073 \u1085 \u1077 \u1077 ](\cf11 \{\cf8 link\cf11 \}\cf10 )\cf13 \\n\\n\cf10 VK: [https://vk.com/kolesnikovilya](https://vk.com/kolesnikovilya)\cf13 \\n\\n\cf10 \uc0\u1048 \u1089 \u1090 \u1086 \u1095 \u1085 \u1080 \u1082 : [\u1063 \u1080 \u1090 \u1072 \u1090 \u1100  \u1085 \u1072  \u1089 \u1072 \u1081 \u1090 \u1077 ](\cf11 \{\cf8 link\cf11 \}\cf10 )"\cf4 \cb1 \
+\cb3                 \cf2 await\cf4  \cf8 context\cf4 .bot.send_message(\cf8 chat_id\cf9 =\cf12 CHANNEL_ID\cf4 , \cf8 text\cf9 =\cf8 message\cf4 , \cf8 parse_mode\cf9 =\cf5 ParseMode\cf4 .\cf12 MARKDOWN\cf4 )\cb1 \
+\cb3                 \cf8 logger\cf4 .\cf7 info\cf4 (\cf11 f\cf10 "\uc0\u1057 \u1090 \u1072 \u1090 \u1100 \u1103  \u1087 \u1086  \u1079 \u1072 \u1087 \u1088 \u1086 \u1089 \u1091  '\cf11 \{\cf8 query\cf11 \}\cf10 ' \uc0\u1091 \u1089 \u1087 \u1077 \u1096 \u1085 \u1086  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1083 \u1077 \u1085 \u1072  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \cf11 \{\cf8 title\cf11 \}\cf10 "\cf4 )\cb1 \
+\cb3             \cf2 else\cf4 :\cb1 \
+\cb3                 \cf2 await\cf4  \cf8 update\cf4 .message.reply_text(\cf10 "\uc0\u1053 \u1077  \u1091 \u1076 \u1072 \u1083 \u1086 \u1089 \u1100  \u1085 \u1072 \u1081 \u1090 \u1080  \u1089 \u1090 \u1072 \u1090 \u1100 \u1102  \u1087 \u1086  \u1074 \u1072 \u1096 \u1077 \u1084 \u1091  \u1079 \u1072 \u1087 \u1088 \u1086 \u1089 \u1091 ."\cf4 )\cb1 \
+\cb3                 \cf8 logger\cf4 .\cf7 info\cf4 (\cf11 f\cf10 "\uc0\u1057 \u1090 \u1072 \u1090 \u1100 \u1103  \u1087 \u1086  \u1079 \u1072 \u1087 \u1088 \u1086 \u1089 \u1091  '\cf11 \{\cf8 query\cf11 \}\cf10 ' \uc0\u1085 \u1077  \u1085 \u1072 \u1081 \u1076 \u1077 \u1085 \u1072 ."\cf4 )\cb1 \
+\cb3         \cf2 else\cf4 :\cb1 \
+\cb3             \cf8 logger\cf4 .\cf7 error\cf4 (\cf11 f\cf10 "\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1087 \u1086 \u1076 \u1082 \u1083 \u1102 \u1095 \u1077 \u1085 \u1080 \u1080  \u1082  \u1089 \u1072 \u1081 \u1090 \u1091  harekrishna.ru, \u1082 \u1086 \u1076  \u1086 \u1090 \u1074 \u1077 \u1090 \u1072 : \cf11 \{\cf8 response\cf4 .\cf8 status_code\cf11 \}\cf10 "\cf4 )\cb1 \
+\cb3     \cf2 except\cf4  \cf5 Exception\cf4  \cf2 as\cf4  \cf8 e\cf4 :\cb1 \
+\cb3         \cf8 logger\cf4 .\cf7 error\cf4 (\cf11 f\cf10 "\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1086 \u1073 \u1088 \u1072 \u1097 \u1077 \u1085 \u1080 \u1080  \u1082  \u1089 \u1072 \u1081 \u1090 \u1091  harekrishna.ru: \cf11 \{\cf8 e\cf11 \}\cf10 "\cf4 )\cb1 \
+\
+\pard\pardeftab720\partightenfactor0
+\cf6 \cb3 # \uc0\u1054 \u1089 \u1085 \u1086 \u1074 \u1085 \u1072 \u1103  \u1092 \u1091 \u1085 \u1082 \u1094 \u1080 \u1103 \cf4 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf11 \cb3 def\cf4  \cf7 main\cf4 ():\cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3     \cf6 # \uc0\u1057 \u1086 \u1079 \u1076 \u1072 \u1077 \u1084  \u1086 \u1073 \u1098 \u1077 \u1082 \u1090  ApplicationBuilder \u1080  \u1087 \u1077 \u1088 \u1077 \u1076 \u1072 \u1077 \u1084  \u1077 \u1084 \u1091  \u1090 \u1086 \u1082 \u1077 \u1085  \u1074 \u1072 \u1096 \u1077 \u1075 \u1086  \u1073 \u1086 \u1090 \u1072 \cf4 \cb1 \
+\cb3     \cf11 global\cf4  \cf8 application\cf4 \cb1 \
+\cb3     \cf8 application\cf4  \cf9 =\cf4  \cf5 ApplicationBuilder\cf4 ().\cf7 token\cf4 (\cf12 BOT_TOKEN\cf4 ).\cf7 build\cf4 ()\cb1 \
+\
+\cb3     \cf6 # \uc0\u1044 \u1086 \u1073 \u1072 \u1074 \u1083 \u1103 \u1077 \u1084  \u1086 \u1073 \u1088 \u1072 \u1073 \u1086 \u1090 \u1095 \u1080 \u1082  \u1082 \u1086 \u1084 \u1072 \u1085 \u1076 \u1099  /send\cf4 \cb1 \
+\cb3     \cf8 application\cf4 .\cf7 add_handler\cf4 (\cf5 CommandHandler\cf4 (\cf10 "send"\cf4 , \cf7 send_message\cf4 ))\cb1 \
+\
+\cb3     \cf6 # \uc0\u1044 \u1086 \u1073 \u1072 \u1074 \u1083 \u1103 \u1077 \u1084  \u1086 \u1073 \u1088 \u1072 \u1073 \u1086 \u1090 \u1095 \u1080 \u1082  \u1090 \u1077 \u1082 \u1089 \u1090 \u1086 \u1074 \u1099 \u1093  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1081  \u1086 \u1090  \u1087 \u1086 \u1083 \u1100 \u1079 \u1086 \u1074 \u1072 \u1090 \u1077 \u1083 \u1103 \cf4 \cb1 \
+\cb3     \cf8 application\cf4 .\cf7 add_handler\cf4 (\cf5 MessageHandler\cf4 (\cf5 filters\cf4 .\cf8 TEXT\cf4  \cf7 &\cf4  \cf7 ~\cf5 filters\cf4 .\cf8 COMMAND\cf4 , \cf7 forward_to_channel\cf4 ))\cb1 \
+\
+\cb3     \cf6 # \uc0\u1044 \u1086 \u1073 \u1072 \u1074 \u1083 \u1103 \u1077 \u1084  \u1086 \u1073 \u1088 \u1072 \u1073 \u1086 \u1090 \u1095 \u1080 \u1082  \u1082 \u1086 \u1084 \u1072 \u1085 \u1076 \u1099  /hk \u1076 \u1083 \u1103  \u1087 \u1086 \u1080 \u1089 \u1082 \u1072  \u1080  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080  \u1089 \u1090 \u1072 \u1090 \u1100 \u1080  \u1087 \u1086  \u1079 \u1072 \u1087 \u1088 \u1086 \u1089 \u1091 \cf4 \cb1 \
+\cb3     \cf8 application\cf4 .\cf7 add_handler\cf4 (\cf5 CommandHandler\cf4 (\cf10 "hk"\cf4 , \cf7 send_harekrishna_article_command\cf4 ))\cb1 \
+\
+\cb3     \cf6 # \uc0\u1057 \u1086 \u1079 \u1076 \u1072 \u1077 \u1084  \u1087 \u1083 \u1072 \u1085 \u1080 \u1088 \u1086 \u1074 \u1097 \u1080 \u1082  \u1079 \u1072 \u1076 \u1072 \u1095  \u1076 \u1083 \u1103  \u1072 \u1074 \u1090 \u1086 \u1084 \u1072 \u1090 \u1080 \u1095 \u1077 \u1089 \u1082 \u1086 \u1081  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1080  \u1089 \u1090 \u1072 \u1090 \u1077 \u1081 \cf4 \cb1 \
+\cb3     \cf8 scheduler\cf4  \cf9 =\cf4  \cf5 AsyncIOScheduler\cf4 ()\cb1 \
+\cb3     \cf8 scheduler\cf4 .\cf7 add_job\cf4 (\cf7 send_harekrishna_article\cf4 , \cf10 'interval'\cf4 , \cf8 minutes\cf9 =\cf14 5\cf4 )\cb1 \
+\cb3     \cf8 scheduler\cf4 .\cf7 start\cf4 ()\cb1 \
+\
+\cb3     \cf6 # \uc0\u1058 \u1077 \u1089 \u1090 \u1086 \u1074 \u1086 \u1077  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1087 \u1086 \u1089 \u1083 \u1077  \u1079 \u1072 \u1087 \u1091 \u1089 \u1082 \u1072 \cf4 \cb1 \
+\cb3     \cf11 async\cf4  \cf11 def\cf4  \cf7 send_test_message\cf4 ():\cb1 \
+\cb3         \cf8 logger\cf4 .\cf7 info\cf4 (\cf10 "\uc0\u1054 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1072  \u1090 \u1077 \u1089 \u1090 \u1086 \u1074 \u1086 \u1075 \u1086  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1103  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083  \u1076 \u1083 \u1103  \u1087 \u1088 \u1086 \u1074 \u1077 \u1088 \u1082 \u1080  \u1088 \u1072 \u1073 \u1086 \u1090 \u1099 ..."\cf4 )\cb1 \
+\cb3         \cf2 try\cf4 :\cb1 \
+\cb3             \cf2 await\cf4  \cf8 application\cf4 .\cf8 bot\cf4 .\cf7 send_message\cf4 (\cf8 chat_id\cf9 =\cf12 CHANNEL_ID\cf4 , \cf8 text\cf9 =\cf10 "\uc0\u1058 \u1077 \u1089 \u1090 \u1086 \u1074 \u1086 \u1077  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1076 \u1083 \u1103  \u1087 \u1088 \u1086 \u1074 \u1077 \u1088 \u1082 \u1080  \u1088 \u1072 \u1073 \u1086 \u1090 \u1099  \u1073 \u1086 \u1090 \u1072 ."\cf4 )\cb1 \
+\cb3             \cf8 logger\cf4 .\cf7 info\cf4 (\cf10 "\uc0\u1058 \u1077 \u1089 \u1090 \u1086 \u1074 \u1086 \u1077  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1077  \u1091 \u1089 \u1087 \u1077 \u1096 \u1085 \u1086  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1083 \u1077 \u1085 \u1086  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 ."\cf4 )\cb1 \
+\cb3         \cf2 except\cf4  \cf5 Exception\cf4  \cf2 as\cf4  \cf8 e\cf4 :\cb1 \
+\cb3             \cf8 logger\cf4 .\cf7 error\cf4 (\cf11 f\cf10 "\uc0\u1054 \u1096 \u1080 \u1073 \u1082 \u1072  \u1087 \u1088 \u1080  \u1086 \u1090 \u1087 \u1088 \u1072 \u1074 \u1082 \u1077  \u1090 \u1077 \u1089 \u1090 \u1086 \u1074 \u1086 \u1075 \u1086  \u1089 \u1086 \u1086 \u1073 \u1097 \u1077 \u1085 \u1080 \u1103  \u1074  \u1082 \u1072 \u1085 \u1072 \u1083 : \cf11 \{\cf8 e\cf11 \}\cf10 "\cf4 )\cb1 \
+\
+\cb3     \cf6 # \uc0\u1047 \u1072 \u1087 \u1091 \u1089 \u1082 \u1072 \u1077 \u1084  \u1073 \u1086 \u1090 \u1072 \cf4 \cb1 \
+\cb3     \cf8 logger\cf4 .\cf7 info\cf4 (\cf10 "\uc0\u1041 \u1086 \u1090  \u1079 \u1072 \u1087 \u1091 \u1097 \u1077 \u1085  \u1080  \u1075 \u1086 \u1090 \u1086 \u1074  \u1082  \u1088 \u1072 \u1073 \u1086 \u1090 \u1077 ."\cf4 )\cb1 \
+\cb3     \cf8 loop\cf4  \cf9 =\cf4  \cf5 asyncio\cf4 .\cf7 get_event_loop\cf4 ()\cb1 \
+\cb3     \cf8 loop\cf4 .\cf7 run_until_complete\cf4 (\cf7 send_test_message\cf4 ())\cb1 \
+\cb3     \cf8 application\cf4 .\cf7 run_polling\cf4 ()\cb1 \
+\
+\cf2 \cb3 if\cf4  \cf8 __name__\cf4  \cf9 ==\cf4  \cf10 "__main__"\cf4 :\cb1 \
+\cb3     \cf7 main\cf4 ()\cb1 \
+\
+}

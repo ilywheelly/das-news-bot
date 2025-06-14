@@ -1,0 +1,174 @@
+import logging
+import requests
+from bs4 import BeautifulSoup
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.constants import ParseMode
+import asyncio
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import random
+import re
+
+# Настройка логирования
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Замените эти значения своими
+BOT_TOKEN = "8019538415:AAHSknxd3-GZ_YNDtnG2sNG-YPqtDsqxJz0"
+CHANNEL_ID = "@t_svt4ok"
+SOURCE_NAME = "Шри Чайтанья Сарасват Матх"
+SOURCE_URL = "https://harekrishna.ru/"  # удобно заменить при необходимости
+
+# Функция для отправки сообщения в канал
+async def send_message(update, context):
+    message = "Привет! Это тестовое сообщение от моего телеграм-бота."
+    logger.info("Попытка отправить сообщение в канал...")
+    try:
+        await context.bot.send_message(
+            chat_id=CHANNEL_ID,
+            text=f"{message}\n\n{SOURCE_NAME}: {SOURCE_URL}",
+            parse_mode=ParseMode.MARKDOWN
+        )
+        logger.info(f"Сообщение отправлено в канал: {message}")
+    except Exception as e:
+        logger.error(f"Ошибка при отправке сообщения в канал: {e}")
+
+# Функция для обработки текстовых сообщений от пользователя и отправки их в канал
+async def forward_to_channel(update, context):
+    user_message = update.message.text
+    logger.info(f"Получено сообщение от пользователя '{update.effective_user.username}': {user_message}")
+
+    logger.info("Попытка переслать сообщение в канал...")
+    try:
+        await context.bot.send_message(
+            chat_id=CHANNEL_ID,
+            text=f"{user_message}\n\n{SOURCE_NAME}: {SOURCE_URL}",
+            parse_mode=ParseMode.MARKDOWN
+        )
+        logger.info(f"Сообщение от пользователя '{update.effective_user.username}' отправлено в канал: {user_message}")
+    except Exception as e:
+        logger.error(f"Ошибка при отправке сообщения от пользователя в канал: {e}")
+
+# Получение смыслового ядра статьи
+def get_full_article(link):
+    headers = {"User-Agent": "bot_DAS/1.0"}
+    try:
+        response = requests.get(link, headers=headers)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, "html.parser")
+            return extract_meaningful_paragraph(soup)
+        else:
+            logger.error(f"Ошибка при подключении к странице статьи, код ответа: {response.status_code}")
+            return "Ошибка при получении статьи."
+    except Exception as e:
+        logger.error(f"Ошибка при обращении к странице статьи: {e}")
+        return "Ошибка при получении статьи."
+
+def is_russian(text):
+    cyrillic = len(re.findall(r'[а-яА-Я]', text))
+    total = len(text)
+    return total > 0 and (cyrillic / total) > 0.7
+
+def extract_meaningful_paragraph(soup):
+    paragraphs = soup.find_all("p")
+    keywords = ["гуру", "махапрабху", "преданность", "бхакти", "рамананда", "душа"]
+
+    scored_paragraphs = []
+    for i, para in enumerate(paragraphs):
+        text = para.get_text(strip=True)
+        if not text or len(text) < 80:
+            continue
+        if not is_russian(text):
+            continue
+
+        length_score = len(text)
+        keyword_score = sum(text.lower().count(k) for k in keywords)
+        position_score = -abs(i - len(paragraphs) // 2)
+        total_score = length_score * 0.1 + keyword_score * 10 + position_score
+
+        scored_paragraphs.append((total_score, text))
+
+    scored_paragraphs.sort(reverse=True)
+    best_paragraphs = [text for score, text in scored_paragraphs[:2]]
+    return "\n\n".join(best_paragraphs) if best_paragraphs else "Описание не найдено."
+
+# Отправка случайной статьи
+async def send_harekrishna_article():
+    url = "https://harekrishna.ru/rss/read/"
+    headers = {"User-Agent": "bot_DAS/1.0"}
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, "lxml-xml")
+            items = soup.find_all("item")
+            if items:
+                item = random.choice(items)
+                title = item.find("title").text
+                link = item.find("link").text
+                description = get_full_article(link)
+
+                message = f"{title}\n\n{description}\n\n[Подробнее]({link})\n\n{SOURCE_NAME}: {SOURCE_URL}"
+                await application.bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode=ParseMode.MARKDOWN)
+                logger.info(f"Статья с сайта harekrishna.ru успешно отправлена в канал: {title}")
+        else:
+            logger.error(f"Ошибка при подключении к сайту harekrishna.ru, код ответа: {response.status_code}")
+    except Exception as e:
+        logger.error(f"Ошибка при обращении к сайту harekrishna.ru: {e}")
+
+# Обработка команды /hk
+async def send_harekrishna_article_command(update, context):
+    query = ' '.join(context.args)
+    logger.info(f"Поиск статьи на тему: {query}")
+    url = "https://harekrishna.ru/rss/read/"
+    headers = {"User-Agent": "bot_DAS/1.0"}
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, "lxml-xml")
+            items = soup.find_all("item")
+            filtered_items = [item for item in items if query.lower() in item.find("title").text.lower()]
+            if filtered_items:
+                item = random.choice(filtered_items)
+                title = item.find("title").text
+                link = item.find("link").text
+                description = get_full_article(link)
+
+                message = f"{title}\n\n{description}\n\n[Подробнее]({link})\n\n{SOURCE_NAME}: {SOURCE_URL}"
+                await context.bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode=ParseMode.MARKDOWN)
+                logger.info(f"Статья по запросу '{query}' успешно отправлена в канал: {title}")
+            else:
+                await update.message.reply_text("Не удалось найти статью по вашему запросу.")
+                logger.info(f"Статья по запросу '{query}' не найдена.")
+        else:
+            logger.error(f"Ошибка при подключении к сайту harekrishna.ru, код ответа: {response.status_code}")
+    except Exception as e:
+        logger.error(f"Ошибка при обращении к сайту harekrishna.ru: {e}")
+
+# Основная функция
+
+def main():
+    global application
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    application.add_handler(CommandHandler("send", send_message))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, forward_to_channel))
+    application.add_handler(CommandHandler("hk", send_harekrishna_article_command))
+
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(send_harekrishna_article, 'interval', minutes=5)
+    scheduler.start()
+
+    async def send_test_message():
+        logger.info("Отправка тестового сообщения в канал для проверки работы...")
+        try:
+            await application.bot.send_message(chat_id=CHANNEL_ID, text=f"Тестовое сообщение для проверки работы бота.\n\n{SOURCE_NAME}: {SOURCE_URL}")
+            logger.info("Тестовое сообщение успешно отправлено в канал.")
+        except Exception as e:
+            logger.error(f"Ошибка при отправке тестового сообщения в канал: {e}")
+
+    logger.info("Бот запущен и готов к работе.")
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(send_test_message())
+    application.run_polling()
+
+if __name__ == "__main__":
+    main()

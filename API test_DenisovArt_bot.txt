@@ -1,0 +1,19 @@
+API 
+
+t.me/test_DenisovArt_bot
+
+# Замените эти значения своими
+BOT_TOKEN = "8019538415:AAHSknxd3-GZ_YNDtnG2sNG-YPqtDsqxJz0"
+CHANNEL_ID = "@test_DenisovArtS_bot"
+
+8019538415:AAHSknxd3-GZ_YNDtnG2sNG-YPqtDsqxJz0
+
+Канал @test_DenisovArtS_bot
+
+Запуск бота: 
+python3 '/Users/ilyakolesnikov/Documents/Scripts for bots/TG Bot/DAS.py'
+
+
+@shki_tmk_tomsk. 
+export PATH=$PATH:/Users/ilyakolesnikov/Library/Python/3.9/bin
+
