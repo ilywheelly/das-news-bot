@@ -1,6 +1,7 @@
 import logging
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 from telegram.ext import ApplicationBuilder, MessageHandler, filters
 from telegram.constants import ParseMode
 import asyncio
@@ -43,35 +44,45 @@ def get_full_article(link):
                     break
             description = "\n\n".join(best) if best else "🔍 Загрузка текста"
 
+            # Поиск mp3 для сайта sridharmaharaj.ru
+            if "sridharmaharaj.ru" in link:
+                mp3_tag = soup.find("a", href=lambda h: h and h.lower().endswith(".mp3"))
+                if mp3_tag:
+                    mp3_url = mp3_tag.get("href")
+                    if mp3_url:
+                        mp3_url = urljoin(link, mp3_url)
+                        logger.info(f"✅ MP3 найден: {mp3_url}")
+                        return description, mp3_url, True
+
             for img_tag in soup.find_all("img"):
                 src = img_tag.get("src")
                 if not src:
                     continue
                 if not src.startswith("http"):
-                    src = "https://harekrishna.ru/" + src.lstrip("/")
+                    src = urljoin(link, src)
                 if any(x in src.lower() for x in ["logo", "1x1", "pixel", ".gif", ".svg"]):
                     continue
                 try:
                     img_response = requests.get(src, headers=headers, timeout=5)
                     if img_response.status_code == 200 and len(img_response.content) > 5000:
                         logger.info(f"✅ Картинка найдена: {src}")
-                        return description, src
+                        return description, src, False
                 except Exception as e:
                     logger.warning(f"Ошибка при загрузке картинки {src}: {e}")
-            return description, None
+            return description, None, False
         else:
             logger.error(f"Ошибка загрузки HTML: {response.status_code}")
     except Exception as e:
         logger.error(f"Ошибка при получении статьи: {e}")
-    return "Ошибка при получении статьи.", None
+    return "Ошибка при получении статьи.", None, False
 
 # Обработка входящих сообщений
 async def forward_to_channel(update, context):
     user_message = update.message.text
     logger.info(f"Сообщение от {update.effective_user.username}: {user_message}")
     try:
-        if user_message.startswith("https://harekrishna.ru/"):
-            description, image_url = get_full_article(user_message)
+        if user_message.startswith("https://harekrishna.ru/") or user_message.startswith("https://sridharmaharaj.ru/"):
+            description, media_url, is_audio = get_full_article(user_message)
 
             # Попытка получить заголовок со страницы
             headers = {"User-Agent": "bot_DAS/1.0"}
@@ -111,8 +122,11 @@ async def forward_to_channel(update, context):
 [📖 Читать статью]({user_message})
 
 _Источник: [{SOURCE_NAME}]({SOURCE_URL})_"""
-            if image_url:
-                await context.bot.send_photo(chat_id=CHANNEL_ID, photo=image_url, caption=caption[:1024], parse_mode=ParseMode.MARKDOWN)
+            if media_url:
+                if is_audio:
+                    await context.bot.send_audio(chat_id=CHANNEL_ID, audio=media_url, caption=caption[:1024], parse_mode=ParseMode.MARKDOWN)
+                else:
+                    await context.bot.send_photo(chat_id=CHANNEL_ID, photo=media_url, caption=caption[:1024], parse_mode=ParseMode.MARKDOWN)
             else:
                 await context.bot.send_message(chat_id=CHANNEL_ID, text=caption, parse_mode=ParseMode.MARKDOWN)
         else:
@@ -137,7 +151,7 @@ async def send_harekrishna_article():
                 item = random.choice(items)
                 title = item.find("title").text.split('|')[0].strip()
                 link = item.find("link").text
-                description, image_url = get_full_article(link)
+                description, media_url, is_audio = get_full_article(link)
                 caption = f"""📜 *{title}*
 
 🖋️ {description}
@@ -145,8 +159,11 @@ async def send_harekrishna_article():
 [📖 Читать статью]({link})
 
 _Источник: [{SOURCE_NAME}]({SOURCE_URL})_"""
-                if image_url:
-                    await application.bot.send_photo(chat_id=CHANNEL_ID, photo=image_url, caption=caption[:1024], parse_mode=ParseMode.MARKDOWN)
+                if media_url:
+                    if is_audio:
+                        await application.bot.send_audio(chat_id=CHANNEL_ID, audio=media_url, caption=caption[:1024], parse_mode=ParseMode.MARKDOWN)
+                    else:
+                        await application.bot.send_photo(chat_id=CHANNEL_ID, photo=media_url, caption=caption[:1024], parse_mode=ParseMode.MARKDOWN)
                 else:
                     await application.bot.send_message(chat_id=CHANNEL_ID, text=caption, parse_mode=ParseMode.MARKDOWN)
                 logger.info(f"Автостатья отправлена: {title}")
