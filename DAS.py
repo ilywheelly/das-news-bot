@@ -10,6 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 import random
 import re
 import pytz
+from shloka_day import publish_from_index
 
 # Логирование
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -129,6 +130,20 @@ _Источник: [sridharmaharaj.ru](https://sridharmaharaj.ru/)_"""
 
     source_toggle = not source_toggle
 
+
+async def send_shloka_day():
+    try:
+        candidate = await publish_from_index(application.bot.send_message, CHANNEL_ID)
+        if candidate:
+            logger.info(
+                f"Шлока дня опубликована: {candidate.scripture_code} "
+                f"{candidate.reference} ({candidate.unique_id})"
+            )
+        else:
+            logger.info("Шлока дня: неопубликованных записей не осталось")
+    except Exception as e:
+        logger.error(f"Ошибка публикации шлоки дня: {e}")
+
 # Обработка входящих сообщений
 async def forward_to_channel(update, context):
     user_message = update.message.text.strip()
@@ -175,6 +190,10 @@ def main():
     scheduler = AsyncIOScheduler(timezone=pytz.timezone('Asia/Tomsk'))
     scheduler.add_job(send_alternating_article, CronTrigger(hour=11, minute=0))
     scheduler.add_job(send_alternating_article, CronTrigger(hour=17, minute=0))
+    scheduler.add_job(
+        send_shloka_day,
+        CronTrigger(hour=19, minute=0, timezone="Asia/Tomsk"),
+    )
     scheduler.start()
 
     async def test_msg():
