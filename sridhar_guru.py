@@ -182,9 +182,18 @@ def _commentary_after_footnote(anchor: Tag, max_paragraphs: int = 3) -> str:
     """
     parts: list[str] = []
     seen = set()
+    transcript = anchor.find_parent(class_="PostPage__text")
+    if transcript is None:
+        return ""
 
     for el in anchor.find_all_next():
         if not isinstance(el, Tag):
+            continue
+        if transcript not in el.parents:
+            break
+        if el.name == "a" and "Article__foot-link" in el.get("class", []):
+            if parts:
+                break
             continue
 
         # Остановиться на следующем заголовке сноски / справочном блоке.
