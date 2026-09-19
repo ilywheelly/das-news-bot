@@ -184,9 +184,6 @@ _Источник: [sridharmaharaj.ru](https://sridharmaharaj.ru/)_"""
 # Основной запуск
 def main():
     global application
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, forward_to_channel))
-
     scheduler = AsyncIOScheduler(timezone=pytz.timezone('Asia/Tomsk'))
     scheduler.add_job(send_alternating_article, CronTrigger(hour=11, minute=0))
     scheduler.add_job(send_alternating_article, CronTrigger(hour=17, minute=0))
@@ -194,18 +191,24 @@ def main():
         send_shloka_day,
         CronTrigger(hour=19, minute=0, timezone="Asia/Tomsk"),
     )
-    scheduler.start()
 
-    async def test_msg():
-        try:
-            await application.bot.send_message(chat_id=CHANNEL_ID, text=f"Тестовое сообщение\n\n{SOURCE_NAME}: {SOURCE_URL}", parse_mode=ParseMode.MARKDOWN)
-            logger.info("Тестовое сообщение успешно отправлено.")
-        except Exception as e:
-            logger.error(f"Ошибка при отправке теста: {e}")
+    async def post_init(_application):
+        scheduler.start()
+
+    async def post_shutdown(_application):
+        if scheduler.running:
+            scheduler.shutdown(wait=False)
+
+    application = (
+        ApplicationBuilder()
+        .token(BOT_TOKEN)
+        .post_init(post_init)
+        .post_shutdown(post_shutdown)
+        .build()
+    )
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, forward_to_channel))
 
     logger.info("Бот запущен.")
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(test_msg())
     application.run_polling()
 
 if __name__ == "__main__":
