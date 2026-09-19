@@ -68,6 +68,9 @@ SCRIPTURE_PATTERNS = [
 ]
 
 FOOTNOTE_RE = re.compile(r"^\[(\d+)\]$")
+SPEAKER_LABEL_RE = re.compile(r"^\s*[^:\n]{1,120}:\s*$")
+SERVICE_LINE_RE = re.compile(r"^\s*\[[^\]\n]{1,160}\]\s*$")
+MIN_COMMENTARY_CHARS = 100
 
 
 @dataclass
@@ -183,6 +186,7 @@ def _commentary_after_footnote(anchor: Tag, max_paragraphs: int = 3) -> str:
     parts: list[str] = []
     seen = set()
     transcript = anchor.find_parent(class_="PostPage__text")
+    current_verse = anchor.find_parent(class_="Article__verse-wrapper")
     if transcript is None:
         return ""
 
@@ -190,6 +194,11 @@ def _commentary_after_footnote(anchor: Tag, max_paragraphs: int = 3) -> str:
         if not isinstance(el, Tag):
             continue
         if transcript not in el.parents:
+            break
+        if (
+            "Article__verse-wrapper" in el.get("class", [])
+            and el is not current_verse
+        ):
             break
         if el.name == "a" and "Article__foot-link" in el.get("class", []):
             if parts:
@@ -234,6 +243,17 @@ def _commentary_after_footnote(anchor: Tag, max_paragraphs: int = 3) -> str:
             break
 
     return "\n\n".join(parts).strip()
+
+
+def _has_substantive_commentary(commentary: str) -> bool:
+    lines = [line.strip() for line in commentary.splitlines() if line.strip()]
+    while lines and (
+        SPEAKER_LABEL_RE.fullmatch(lines[0])
+        or SERVICE_LINE_RE.fullmatch(lines[0])
+    ):
+        lines.pop(0)
+    meaningful = re.sub(r"\s+", " ", " ".join(lines)).strip()
+    return len(meaningful) >= MIN_COMMENTARY_CHARS
 
 
 def _lecture_title(soup: BeautifulSoup) -> str:
@@ -332,7 +352,7 @@ def extract_candidates_from_post(
         timestamp = _nearest_timestamp_before(anchor)
         commentary = _commentary_after_footnote(anchor)
 
-        if not commentary:
+        if not _has_substantive_commentary(commentary):
             continue
 
         candidates.append(
