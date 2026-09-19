@@ -1,0 +1,46 @@
+# Интеграция «Шлоки дня» в DAS.py
+
+Минимальный пример:
+
+from sridhar_guru import (
+    extract_candidates_from_post,
+    choose_unpublished,
+    mark_published,
+    telegram_html,
+)
+
+async def send_shloka_of_day(bot, lecture_url, channel_id):
+    candidates = extract_candidates_from_post(lecture_url)
+    shloka = choose_unpublished(candidates)
+
+    if not shloka:
+        print("На этой странице нет новой подходящей шлоки.")
+        return
+
+    text = telegram_html(shloka)
+
+    await bot.send_message(
+        chat_id=channel_id,
+        text=text,
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+    )
+
+    # Отмечаем опубликованной ТОЛЬКО после успешной отправки Telegram.
+    mark_published(shloka)
+
+
+Пока модуль принимает URL конкретной лекции.
+
+Следующий слой, который нужно добавить:
+1. Получение списка всех /posts/ из архива sridhar.guru.
+2. Локальный индекс:
+   scripture/reference -> lecture URL -> footnote -> timestamp.
+3. Ежедневный выбор случайной ещё не опубликованной пары
+   «шлока + комментарий».
+4. Периодическое обновление индекса, а не обход сайта каждый день.
+
+Файлы рядом:
+- sridhar_guru.py
+- devanagari.json
+- shloka_history.json (создаётся автоматически)
