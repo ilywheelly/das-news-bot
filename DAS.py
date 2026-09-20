@@ -4,6 +4,11 @@ import json
 import requests
 from bs4 import BeautifulSoup
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import (
+    BotCommand,
+    BotCommandScopeChat,
+    MenuButtonCommands,
+)
 from telegram.ext import (
     ApplicationBuilder,
     CallbackQueryHandler,
@@ -67,11 +72,27 @@ def _public_home_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("📢 Канал", callback_data="public:channel")],
     ])
 
-
 def _public_home_text() -> str:
     return "🙏 <b>Светлячок</b>\n\nЦитаты и шлоки из лекций\nШрилы Б. Р. Шридхара Дев-Госвами Махараджа."
 
 
+async def setup_bot_commands(application) -> None:
+    public_commands = [
+        BotCommand("start", "Запустить Светлячок"),
+        BotCommand("menu", "Открыть главное меню"),
+        BotCommand("help", "Помощь"),
+        BotCommand("myid", "Показать мой Telegram ID"),
+    ]
+    try:
+        await application.bot.set_my_commands(public_commands)
+        await application.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
+        await application.bot.set_my_commands(
+            public_commands + [BotCommand("admin", "Панель администратора")],
+            scope=BotCommandScopeChat(chat_id=SUPERADMIN_ID),
+        )
+        logger.info("Команды и кнопка меню Telegram настроены")
+    except Exception:
+        logger.exception("Не удалось настроить команды или кнопку меню Telegram")
 async def public_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.user_data.pop("public_action", None)
     await update.message.reply_text(
@@ -1020,6 +1041,7 @@ def main():
     _rebuild_shloka_jobs()
 
     async def post_init(_application):
+        await setup_bot_commands(_application)
         scheduler.start()
 
     async def post_shutdown(_application):
