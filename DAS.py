@@ -55,6 +55,10 @@ from sridhar_guru import HISTORY_FILE, load_history, mark_published, telegram_ht
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Конфигурация
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 SUPERADMIN_ID = int(os.environ["SUPERADMIN_ID"])
