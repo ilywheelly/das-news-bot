@@ -415,7 +415,7 @@ def telegram_html(candidate: ShlokaCandidate) -> str:
         commentary = cut[: pos + 1] if pos > 900 else cut.rstrip() + "…"
 
     lines = [
-        "📜 <b>Шлока дня</b>",
+        "📜 <b>Шлока из бесед Шридхара Махараджа</b>",
         "",
         f"<b>{esc(candidate.scripture_title)} {esc(candidate.reference)}</b>",
         "",
