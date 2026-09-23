@@ -12,7 +12,7 @@ def main() -> None:
 
     output = telegram_html(candidate)
     assert candidate.unique_id
-    assert output.startswith("📜 <b>Шлока дня</b>")
+    assert output.startswith("📜 <b>Шлока из бесед Шридхара Махараджа</b>")
     print(f"Выбрано: {candidate.unique_id} ({candidate.scripture_code} {candidate.reference})")
     print("\n" + output)
 
