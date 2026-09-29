@@ -1,6 +1,7 @@
 import logging
 import os
 import json
+import html
 import requests
 from bs4 import BeautifulSoup
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -354,12 +355,188 @@ def get_full_article(link):
         logger.error(f"Ошибка при получении статьи: {e}")
     return "Ошибка при получении статьи.", None
 
+_SRIDHAR_USER_AGENT = {"User-Agent": "bot_DAS/1.0"}
+_SRIDHAR_SKIP_CLASS_RE = re.compile(
+    r"share|social|nav-|navigation|footer|sharedaddy|jetpack|"
+    r"wp-playlist|screen-reader|entry-utility|sd-title|meta-nav",
+    re.I,
+)
+_SRIDHAR_DOWNLOAD_PREFIX_RE = re.compile(
+    r"^Скачать:\s*"
+    r"(?:аудиозапись(?:\s+в\s+MP3)?\s*\([^)]*\)\s*)?"
+    r"(?:транскрипцию\s+в\s+\w+\s*\([^)]*\)\s*)*",
+    re.I,
+)
+_TELEGRAM_MD_SPECIAL_RE = re.compile(r"([_*`\[])")
+_SRIDHAR_BODY_LIMIT = 3500
+
+
+def _escape_telegram_md(text):
+    return _TELEGRAM_MD_SPECIAL_RE.sub(r"\\\1", text or "")
+
+
+def _normalize_sridhar_text(text):
+    text = html.unescape(text or "")
+    text = text.replace("\xa0", " ").replace("\u200b", "")
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\s+([.,:;!?])", r"\1", text)
+    text = re.sub(r"«\s+", "«", text)
+    text = re.sub(r"\s+»", "»", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def _is_sridhar_service_text(text):
+    stripped = " ".join((text or "").split())
+    if not stripped:
+        return True
+    if stripped in {"Скачать:", "Скачать"}:
+        return True
+    if stripped.startswith("Скачать:") and "Шрила" not in stripped and len(stripped) < 120:
+        return True
+    if stripped.startswith("Читать далее"):
+        return True
+    if stripped.startswith("Запись ") and "впервые появилась" in stripped:
+        return True
+    if stripped.startswith("/dl/"):
+        return True
+    return False
+
+
+def _strip_sridhar_download_prefix(text):
+    cleaned = _SRIDHAR_DOWNLOAD_PREFIX_RE.sub("", _normalize_sridhar_text(text), count=1)
+    cleaned = re.sub(r"\s*Читать далее.*$", "", cleaned, flags=re.S).strip()
+    return cleaned
+
+
+def clean_sridhar_rss_excerpt(raw_html):
+    soup = BeautifulSoup(raw_html or "", "html.parser")
+    for tag in soup.find_all(["script", "style", "audio", "iframe"]):
+        tag.decompose()
+    for a in soup.find_all("a"):
+        label = a.get_text(" ", strip=True)
+        if "Читать далее" in label:
+            a.decompose()
+    for p in list(soup.find_all("p")):
+        if _is_sridhar_service_text(p.get_text(" ", strip=True)):
+            p.decompose()
+    text = soup.get_text("\n", strip=True)
+    text = _strip_sridhar_download_prefix(text)
+    text = _normalize_sridhar_text(text)
+    return text
+
+
+def _skip_sridhar_node(element):
+    if not getattr(element, "name", None) or getattr(element, "attrs", None) is None:
+        return False
+    if element.name in {"audio", "script", "style", "noscript", "iframe", "form", "nav", "aside"}:
+        return True
+    classes = " ".join(element.get("class") or [])
+    el_id = element.get("id") or ""
+    if _SRIDHAR_SKIP_CLASS_RE.search(classes) or _SRIDHAR_SKIP_CLASS_RE.search(el_id):
+        return True
+    return False
+
+
+def _is_sridhar_download_list(element):
+    if element.name != "ul":
+        return False
+    links = element.find_all("a")
+    if not links:
+        return False
+    return all(
+        any(cls.startswith("download-") for cls in (a.get("class") or []))
+        or re.search(r"\.(mp3|docx?|pdf|rtf)(\?|$)", (a.get("href") or ""), re.I)
+        for a in links
+    )
+
+
+def parse_sridhar_article_html(html_doc):
+    soup = BeautifulSoup(html_doc or "", "html.parser")
+    title_tag = soup.find("h1", class_="entry-title")
+    title = title_tag.get_text(" ", strip=True) if title_tag else None
+    content = soup.find("div", class_="entry-content") or soup.find("article")
+    if content is None:
+        return title, None
+    to_remove = []
+    for child in content.find_all(True):
+        if _skip_sridhar_node(child) or _is_sridhar_download_list(child):
+            to_remove.append(child)
+    for child in to_remove:
+        child.decompose()
+    paragraphs = []
+    for node in content.find_all(["p", "blockquote", "li"], recursive=True):
+        if node.find_parent(["p", "blockquote"]) is not None:
+            continue
+        text = _normalize_sridhar_text(node.get_text(" ", strip=True))
+        if _is_sridhar_service_text(text):
+            continue
+        text = _strip_sridhar_download_prefix(text)
+        if not text or _is_sridhar_service_text(text):
+            continue
+        if text not in paragraphs:
+            paragraphs.append(text)
+    if not paragraphs:
+        fallback = _normalize_sridhar_text(content.get_text("\n", strip=True))
+        fallback = _strip_sridhar_download_prefix(fallback)
+        if fallback and not _is_sridhar_service_text(fallback):
+            paragraphs = [fallback]
+    if not paragraphs:
+        return title, None
+    body = "\n\n".join(paragraphs)
+    if len(body) > _SRIDHAR_BODY_LIMIT:
+        trimmed = []
+        total = 0
+        for para in paragraphs:
+            extra = len(para) + (2 if trimmed else 0)
+            if total + extra > _SRIDHAR_BODY_LIMIT:
+                break
+            trimmed.append(para)
+            total += extra
+        body = "\n\n".join(trimmed) if trimmed else body[:_SRIDHAR_BODY_LIMIT].rstrip()
+        body = body.rstrip() + "…"
+    return title, body
+
+
+def get_sridhar_full_article(link):
+    try:
+        response = requests.get(link, headers=_SRIDHAR_USER_AGENT, timeout=20)
+        if response.status_code != 200:
+            logger.error("Ошибка загрузки HTML sridharmaharaj.ru: %s", response.status_code)
+            return None
+        _title, text = parse_sridhar_article_html(response.content)
+        return text
+    except Exception as e:
+        logger.error("Ошибка при получении статьи sridharmaharaj.ru: %s", e)
+        return None
+
+
+def get_sridhar_article_from_url(link):
+    try:
+        response = requests.get(link, headers=_SRIDHAR_USER_AGENT, timeout=20)
+        if response.status_code == 200:
+            title, text = parse_sridhar_article_html(response.content)
+            if text:
+                return title or "Статья", text, link, None
+    except Exception as e:
+        logger.error("Ошибка при получении статьи sridharmaharaj.ru по URL: %s", e)
+    return "Статья", "🔍 Загрузка текста", link, None
+
+
+def _format_sridhar_telegram_message(title, description, link):
+    return (
+        f"📜 *{_escape_telegram_md(title)}*\n\n"
+        f"🖋️ {_escape_telegram_md(description)}\n\n"
+        f"[📖 Читать статью]({link})\n\n"
+        "_Источник: [sridharmaharaj.ru](https://sridharmaharaj.ru/)_"
+    )
+
+
 # Парсинг sridharmaharaj.ru
 def get_sridhar_article():
     url = "https://sridharmaharaj.ru/feed/"
-    headers = {"User-Agent": "bot_DAS/1.0"}
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=_SRIDHAR_USER_AGENT, timeout=20)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, "xml")
             items = soup.find_all("item")
@@ -367,8 +544,14 @@ def get_sridhar_article():
                 item = random.choice(items)
                 title = item.find("title").text.strip()
                 link = item.find("link").text.strip()
-                description = item.find("description").text.strip()
-                return title, description, link, None  # Без картинки
+                description = get_sridhar_full_article(link)
+                if not description:
+                    raw = item.find("description")
+                    raw_html = raw.text if raw is not None else ""
+                    description = clean_sridhar_rss_excerpt(raw_html)
+                if not description:
+                    description = "🔍 Загрузка текста"
+                return title, description, link, None
     except Exception as e:
         logger.error(f"Ошибка при получении статьи с sridharmaharaj.ru: {e}")
     return "Статья", "🔍 Загрузка текста", "https://sridharmaharaj.ru/", None
@@ -408,13 +591,7 @@ _Источник: [{SOURCE_NAME}]({SOURCE_URL})_"""
             logger.error(f"Ошибка авторассылки: {e}")
     else:
         title, description, link, image_url = get_sridhar_article()
-        caption = f"""📜 *{title}*
-
-🖋️ {description}
-
-[📖 Читать статью]({link})
-
-_Источник: [sridharmaharaj.ru](https://sridharmaharaj.ru/)_"""
+        caption = _format_sridhar_telegram_message(title, description, link)
         await application.bot.send_message(chat_id=CHANNEL_ID, text=caption, parse_mode=ParseMode.MARKDOWN)
         logger.info(f"Автостатья (sridharmaharaj.ru) отправлена: {title}")
 
@@ -995,14 +1172,8 @@ _Источник: [{SOURCE_NAME}]({SOURCE_URL})_"""
             else:
                 await context.bot.send_message(chat_id=CHANNEL_ID, text=caption, parse_mode=ParseMode.MARKDOWN)
         elif user_message.startswith("https://sridharmaharaj.ru/"):
-            title, description, link, image_url = get_sridhar_article()
-            caption = f"""📜 *{title}*
-
-🖋️ {description}
-
-[📖 Читать статью]({link})
-
-_Источник: [sridharmaharaj.ru](https://sridharmaharaj.ru/)_"""
+            title, description, link, image_url = get_sridhar_article_from_url(user_message)
+            caption = _format_sridhar_telegram_message(title, description, link)
             await context.bot.send_message(chat_id=CHANNEL_ID, text=caption, parse_mode=ParseMode.MARKDOWN)
         else:
             await context.bot.send_message(
